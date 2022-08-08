@@ -39,7 +39,19 @@ type RedisClient interface {
 //
 func NewRedisTokenDB(options *GitHubRedisStoreConfig) (TokenDB, error) {
 	var client RedisClient
-	if options.ClusterOptions != nil {
+	if options.FailoverOptions != nil {
+		if options.ClientOptions != nil {
+			glog.Infof("Both redis_token_db.configs and redis_token_db.failover_configs have been set. Only the latter will be used")
+		}
+		if options.ClusterOptions != nil {
+			glog.Infof("Both redis_token_db.cluster_configs and redis_token_db.failover_configs have been set. Only the latter will be used")
+		}
+		opts := &redis.FailoverOptions{
+			MasterName: options.FailoverOptions.MasterName,
+			SentinelAddrs: options.FailoverOptions.SentinelAddrs,
+		}
+		client = redis.NewFailoverClient(opts)
+	} else if options.ClusterOptions != nil {
 		if options.ClientOptions != nil {
 			glog.Infof("Both redis_token_db.configs and redis_token_db.cluster_configs have been set. Only the latter will be used")
 		}
